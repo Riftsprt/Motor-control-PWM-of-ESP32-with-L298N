@@ -1,0 +1,172 @@
+
+
+#define BLYNK_PRINT Serial
+#define BLYNK_TEMPLATE_ID "USE UR TEMPLATE ID HERE"
+#define BLYNK_DEVICE_NAME "NAME YOUR DEVICE "
+#define BLYNK_AUTH_TOKEN "APP THE TOKEN HERE"
+#define BLYNK_FIRMWARE_VERSION        "0.1.1"
+#define APP_DEBUG
+
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+#include <PubSubClient.h>
+#include <analogWrite.h>
+
+
+//Motor PINs
+#define ENA 13
+#define IN1 12
+#define IN2 14
+
+#define IN3 27
+#define IN4 26
+#define ENB 25
+
+// PWM config
+
+const int PWM_pin = 13;
+const int PWM_freq = 500; // adjust according to ur motors from 10 - 1000000
+const int PWM_channel = 0;
+const int PWM_resolution = 10; // adjust according to ur motors from 1-16
+
+
+const int PWM_pin2 = 25;
+const int PWM_freq2 = 500; // adjust according to ur motors from 10 - 1000000
+const int PWM_channel2 = 2;
+const int PWM_resolution2 = 8; // adjust according to ur motors from 1-16
+
+char auth[] = BLYNK_AUTH_TOKEN;
+
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "UR WIFI SSID";
+char pass[] = "WIFI PASSWORD";
+
+bool forward = 0;
+bool backward = 0;
+bool left = 0;
+bool right = 0;
+int Speeda;
+int Speedb;
+
+
+// This function is called every time the device is connected to the Blynk.Cloud
+BLYNK_CONNECTED()
+{
+  Serial.println("Connected to network ");
+}
+void setup()
+{
+  // Debug console
+  Serial.begin(115200);
+  
+  ledcSetup(PWM_channel, PWM_freq, PWM_resolution); // PWM setup for motor 1
+  ledcAttachPin(PWM_pin, PWM_channel);
+
+  ledcSetup(PWM_channel2, PWM_freq2, PWM_resolution2); // PWM setup for motor 2
+  ledcAttachPin(PWM_pin2, PWM_channel2);
+  
+  pinMode(ENA, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  
+  Blynk.begin(auth, ssid, pass);
+
+}
+BLYNK_WRITE(V0) {
+  forward = param.asInt();
+}
+
+BLYNK_WRITE(V1) {
+  backward = param.asInt();
+}
+
+BLYNK_WRITE(V2) {
+  left = param.asInt();
+}
+ 
+BLYNK_WRITE(V3) {
+  right = param.asInt();
+}
+
+BLYNK_WRITE(V4) {
+  Speeda = param.asInt();
+  ledcWrite(PWM_channel,  Speeda);
+}
+
+BLYNK_WRITE(V5) {
+  Speedb = param.asInt();
+  ledcWrite(PWM_channel2, Speedb);
+} 
+
+void motorcontrol() 
+{
+  if (forward == 1) {
+    mforward();
+    Serial.println("forward");
+  } else if (backward == 1) {
+    mbackward();
+    Serial.println("backward");
+  } else if (left == 1) {
+    mleft();
+    Serial.println("left");
+  } else if (right == 1) {
+    mright();
+    Serial.println("right");
+  }
+
+}
+
+void loop()
+{
+  Blynk.run();
+  motorcontrol();
+ }
+
+void mforward() {
+
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+  ledcWrite(PWM_channel,  Speeda);
+  ledcWrite(PWM_channel2, Speedb);
+  
+}
+void mbackward() {
+ 
+  ledcWrite(PWM_channel, Speeda);
+  ledcWrite(PWM_channel2, Speedb);
+  
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+}
+void mleft() {
+ 
+  ledcWrite(PWM_channel, Speeda);
+  ledcWrite(PWM_channel2, Speedb);
+  
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+}
+void mright() {
+ //  analogWrite(ENA, Speeda);
+  // analogWrite(ENB, Speedb);
+
+  ledcWrite(PWM_channel, Speeda);
+  ledcWrite(PWM_channel2, Speedb);
+  
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
